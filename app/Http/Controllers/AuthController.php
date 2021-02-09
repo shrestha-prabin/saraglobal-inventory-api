@@ -71,7 +71,7 @@ class AuthController extends Controller
         ));
 
         return $this->response(
-            false,
+            true,
             null,
             [
                 'message' => 'User successfully registered',

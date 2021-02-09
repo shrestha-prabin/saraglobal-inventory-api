@@ -2,13 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProductCategory;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Response;
 
-class ProductCategoryController extends Controller
+class TransactionController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -17,25 +13,7 @@ class ProductCategoryController extends Controller
      */
     public function index()
     {
-
-        $id = 2;
-
-        // return ProductCategory::find(1)->subcategories;
-
-        // return User::withTrashed()->find(2)->inventories;
-
-        // return User::find(2)->parentUser;
-
-
-        return User::with(['parentUser'])->whereHas('parentUser', function ($query) use ($id) {   
-            // $query->where('id', $id);   
-        })->get();
-
-        return Response::json([
-            'user' => User::find($id),
-            'child' => User::find($id)->childUsers,
-            'parent' => User::find($id)->parentUser,
-        ]);
+        //
     }
 
     /**

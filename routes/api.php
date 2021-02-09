@@ -34,3 +34,5 @@ Route::get('products', [
 
 Route::resource('/product-category', 'ProductCategoryController');
 Route::resource('/inventory', 'InventoryController');
+
+Route::post('/transfer-stock', 'InventoryController@transferStock');
