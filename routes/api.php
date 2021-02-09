@@ -27,10 +27,18 @@ Route::group([
     Route::post('/restore', 'AuthController@restore');
 });
 
-Route::get('products', [
-    'middleware' => 'auth.role:admin',
-    'uses' => 'ProductController@index'
-]);
+// Route::get('products', [
+//     'middleware' => 'auth.role:admin',
+//     'uses' => 'ProductController@index'
+// ]);
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'product'
+], function() {
+    Route::get('/product-list', 'ProductController@getProductList');
+});
+
 
 Route::resource('/product-category', 'ProductCategoryController');
 Route::resource('/inventory', 'InventoryController');
