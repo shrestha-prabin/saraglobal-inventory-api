@@ -3,22 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductCategory;
+use App\Models\ResponseModel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 
 class ProductCategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    public function getProductCategories()
     {
 
-        $id = 2;
+        return ProductCategory::all();
+
+        // $id = 2;
 
         // return ProductCategory::find(1)->subcategories;
 
@@ -27,25 +26,35 @@ class ProductCategoryController extends Controller
         // return User::find(2)->parentUser;
 
 
-        return User::with(['parentUser'])->whereHas('parentUser', function ($query) use ($id) {   
-            // $query->where('id', $id);   
-        })->get();
+        // return User::with(['parentUser'])->whereHas('parentUser', function ($query) use ($id) {   
+        //     // $query->where('id', $id);   
+        // })->get();
 
-        return Response::json([
-            'user' => User::find($id),
-            'child' => User::find($id)->childUsers,
-            'parent' => User::find($id)->parentUser,
-        ]);
+        // return Response::json([
+        //     'user' => User::find($id),
+        //     'child' => User::find($id)->childUsers,
+        //     'parent' => User::find($id)->parentUser,
+        // ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function addProductCategory(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|unique:product_categories|between:2,100',
+            'parent_category_id' => '',
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseModel::failed(
+                $validator->errors()
+            );
+        }
+
+        ProductCategory::create($validator->validated());
+
+        return ResponseModel::success([
+            'message' => 'New Category Added'
+        ]);
     }
 
     /**

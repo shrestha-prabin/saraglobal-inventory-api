@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
     {
         // User::truncate();
         User::create(['id' => '1', 'name' => 'admin', 'email' => 'admin@email.com', 'password' => bcrypt(111111), 'role' => 'admin']);
-        User::create(['id' => '2', 'name' => 'dealer', 'email' => 'dealder@email.com', 'password' => bcrypt(111111),'parent_user_id' => '1', 'role' => 'dealer']);
+        User::create(['id' => '2', 'name' => 'dealer', 'email' => 'dealer@email.com', 'password' => bcrypt(111111),'parent_user_id' => '1', 'role' => 'dealer']);
         User::create(['id' => '3', 'name' => 'subdealer', 'email' => 'subdealer@email.com', 'password' => bcrypt(111111),'parent_user_id' => '2', 'role' => 'subdealer']);
         User::create(['id' => '4', 'name' => 'customer', 'email' => 'customer@email.com', 'parent_user_id' => '3', 'password' => bcrypt(111111), 'role' => 'customer']);
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\ResponseModel;
 use Closure;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -39,9 +40,8 @@ class RoleAuthorization
 
     private function unauthorized($message = null)
     {
-        return response()->json([
-            'message' => $message ? $message : 'You are unauthorized to access this resource',
-            'success' => false
+        return ResponseModel::failed([
+            'message' => $message ? $message : 'You are unauthorized to access this resource'
         ], 401);
     }
 }

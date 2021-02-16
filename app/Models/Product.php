@@ -15,7 +15,9 @@ class Product extends Model
         'description',
         'brand',
         'category_id',
-        'subcategory_id'
+        'subcategory_id',
+        'manufacture_date',
+        'expiry_date'
     ];
 
     public function category()

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ResponseModel;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
-use Validator;
+use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Illuminate\Support\Facades\Response;
 
@@ -25,19 +26,13 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->response(
-                false,
-                $validator->errors(),
-                null
-            );
+            return ResponseModel::failed($validator->errors());
         }
 
         if (!$token = Auth::attempt($validator->validated())) {
-            return $this->response(
-                false,
-                ['message' => 'Invalid email or password'],
-                null
-            );
+            return ResponseModel::failed([
+                'message' => 'Invalid email or password'
+            ]);
         }
 
         return $this->createNewToken($token);
@@ -58,11 +53,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->response(
-                false,
-                $validator->errors(),
-                null
-            );
+            return ResponseModel::failed($validator->errors());
         }
 
         $user = User::create(array_merge(
@@ -70,14 +61,10 @@ class AuthController extends Controller
             ['password' => bcrypt($request->password)]
         ));
 
-        return $this->response(
-            true,
-            null,
-            [
-                'message' => 'User successfully registered',
-                'user' => $user
-            ],
-        );
+        return ResponseModel::success([
+            'message' => 'User successfully registered',
+            'user' => $user
+        ]);
     }
 
     /**
@@ -89,7 +76,9 @@ class AuthController extends Controller
     {
         Auth::logout();
 
-        return response()->json(['message' => 'User successfully signed out']);
+        return ResponseModel::success([
+            'message' => 'User successfully signed out',
+        ]);
     }
 
     /**
@@ -109,7 +98,9 @@ class AuthController extends Controller
      */
     public function userProfile()
     {
-        return response()->json(Auth::user());
+        return ResponseModel::success([
+            'user' => Auth::user(),
+        ]);
     }
 
     public function delete(Request $request)
@@ -119,12 +110,12 @@ class AuthController extends Controller
 
         if ($user) {
             $user->delete();
-            return Response::json([
-                "message" => "User Deleted Successfully"
+            return ResponseModel::success([
+                'message' => 'User Deleted Successfully',
             ]);
         } else {
-            return Response::json([
-                "message" => "User Not Found"
+            return ResponseModel::failed([
+                'message' => 'User Not Found'
             ]);
         }
     }
@@ -137,17 +128,17 @@ class AuthController extends Controller
         if ($user) {
             if ($user->deleted_at) {
                 $user->restore();
-                return Response::json([
-                    "message" => "User Restored"
+                return ResponseModel::success([
+                    'message' => "User Restored"
                 ]);
             } else {
-                return Response::json([
-                    "message" => "User Already Restored"
+                return ResponseModel::failed([
+                    'message' => 'User Already Restored'
                 ]);
             }
         } else {
-            return Response::json([
-                "message" => "User Not Found"
+            return ResponseModel::failed([
+                'message' => 'User Not Found'
             ]);
         }
     }
@@ -161,26 +152,12 @@ class AuthController extends Controller
      */
     protected function createNewToken($token)
     {
-        return $this->response(
-            true,
-            null,
-            [
-                'message' => 'Login Successful',
-                'access_token' => $token,
-                'token_type' => 'bearer',
-                'expires_in' => Auth::factory()->getTTL() * 60,
-                'user' => Auth::user()
-            ]
-        );
-        return response()->json();
-    }
-
-    public function response($succes, $error, $data)
-    {
-        return Response::json([
-            'success' => $succes,
-            'error' => $error,
-            'data' => $data
+        return ResponseModel::success([
+            'message' => 'Login Successful',
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => Auth::factory()->getTTL() * 60,
+            'user' => Auth::user()
         ]);
     }
 }

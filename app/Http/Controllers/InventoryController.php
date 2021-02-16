@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use App\Models\Product;
+use App\Models\ResponseModel;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 
 class InventoryController extends Controller
 {
@@ -16,11 +19,23 @@ class InventoryController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function getInventory(Request $request)
     {
-        // return Product::all();
-        return Inventory::with(['product', 'stockHolder'])->get();
-        return Inventory::find(1)->product;
+        return ResponseModel::success([
+            'inventory' => Inventory::with(['product', 'stockHolder'])
+                ->paginate(50)
+        ]);
+    }
+
+    public function getUserInventory()
+    {
+        $user = Auth::user();
+
+        return ResponseModel::success([
+            'inventory' => Inventory::with(['product'])
+                ->where('stock_holder_user_id', $user->id)
+                ->paginate(50)
+        ]);
     }
 
     /**
@@ -92,29 +107,40 @@ class InventoryController extends Controller
     public function transferStock(Request $request)
     {
         DB::beginTransaction();
+        
+        $seller = Auth::user();
 
-        $seller_user_id = $request->get('seller_user_id');
-        $buyer_user_id = $request->get('buyer_user_id');
-        $product_id = $request->get('product_id');
-        $count = $request->get('count');
-        $amount = $request->get('amount');
-        $remarks = $request->get('remarks');
+        $validator = Validator::make($request->all(), [
+            'buyer_user_id' => 'required',
+            'product_id' => 'required',
+            'count' => 'required|numeric|min:0|not_in:0',
+            'amount' => 'required|numeric|min:0|not_in:0',
+            'remarks' => 'required|max:1000',
+        ]);
 
-        $seller = User::find($seller_user_id);
+        if ($validator->fails()) {
+            return ResponseModel::failed($validator->errors());
+        }
+        
+        $seller_user_id = $seller->id;
+        $buyer_user_id = $request->buyer_user_id;
+        $count = $request->count;
+        $amount = $request->amount;
+        $remarks = $request->remarks;
+
         $buyer = User::find($buyer_user_id);
 
+        $product_id = $request->product_id;
         $product = Product::find($product_id);
 
-        if (!$seller || !$buyer) {
-            return $this->errorResponse('User not found');
+        if (!$buyer) {
+            return ResponseModel::failed([
+                'message' => 'User not found'
+            ]);
         }
 
         if ($seller_user_id == $buyer_user_id) {
             return $this->errorResponse('Buyer and seller cannot be same');
-        }
-
-        if (!$seller || !$buyer) {
-            return $this->errorResponse('User not found');
         }
 
         $sellerInventory = Inventory::where('product_id', $product_id)
@@ -140,9 +166,9 @@ class InventoryController extends Controller
         }
 
         if ($sellerInventory->stock < $count) {
-            return $this->errorResponse('Insufficient stock. Available Stock - '.$sellerInventory->stock);
+            return $this->errorResponse('Insufficient stock. Available Stock - ' . $sellerInventory->stock);
         }
-        
+
         $sellerInventory->stock -= $count;
         $buyerInventory->stock += $count;
 
@@ -151,7 +177,7 @@ class InventoryController extends Controller
 
         DB::commit();
 
-        return $this->response(true, null, (['message' => $count.' Transfer Successful from '.$seller->name.' to '.$buyer->name]));
+        return $this->response(true, null, (['message' => $count . ' Transfer Successful from ' . $seller->name . ' to ' . $buyer->name]));
     }
 
     public function errorResponse($message)

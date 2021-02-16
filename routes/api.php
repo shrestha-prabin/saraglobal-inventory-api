@@ -19,28 +19,46 @@ Route::group([
     'prefix' => 'auth'
 ], function ($router) {
     Route::post('/login', 'AuthController@login');
-    Route::post('/register', 'AuthController@register');
+});
+
+Route::group([
+    'middleware' => 'auth.role:admin,dealer,subdealer',
+    'prefix' => 'auth'
+], function ($router) {
     Route::post('/refresh', 'AuthController@refresh');
     Route::post('/user-profile', 'AuthController@userProfile');
     Route::post('/logout', 'AuthController@logout');
+});
+
+Route::group([
+    'middleware' => 'auth.role:admin',
+    'prefix' => 'auth'
+], function ($router) {
+    Route::post('/register', 'AuthController@register');
     Route::post('/delete', 'AuthController@delete');
     Route::post('/restore', 'AuthController@restore');
 });
 
-// Route::get('products', [
-//     'middleware' => 'auth.role:admin',
-//     'uses' => 'ProductController@index'
-// ]);
-
 Route::group([
-    'middleware' => 'api',
+    'middleware' => 'auth.role:admin,dealer,subdealer',
     'prefix' => 'product'
 ], function() {
     Route::get('/product-list', 'ProductController@getProductList');
+    Route::post('/add-product', 'ProductController@addProduct');
+
+    Route::get('/category-list', 'ProductCategoryController@getProductCategories');
+    Route::post('/add-category', 'ProductCategoryController@addProductCategory');
 });
 
 
-Route::resource('/product-category', 'ProductCategoryController');
-Route::resource('/inventory', 'InventoryController');
+// Route::resource('/inventory', 'InventoryController');
 
-Route::post('/transfer-stock', 'InventoryController@transferStock');
+
+Route::group([
+    'middleware' => 'auth.role:admin,dealer,subdealer',
+    'prefix' => 'inventory'
+], function ($router) {
+    Route::get('/', 'InventoryController@getInventory');
+    Route::get('/user-inventory', 'InventoryController@getUserInventory');
+    Route::post('/transfer-stock', 'InventoryController@transferStock');
+});
