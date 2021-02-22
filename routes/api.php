@@ -23,6 +23,13 @@ Route::group([
 
 Route::group([
     'middleware' => 'auth.role:admin,dealer,subdealer',
+    'prefix' => 'user'
+], function ($router) {
+    Route::post('/user-list', 'UserController@getUsers');
+});
+
+Route::group([
+    'middleware' => 'auth.role:admin,dealer,subdealer',
     'prefix' => 'auth'
 ], function ($router) {
     Route::post('/refresh', 'AuthController@refresh');
@@ -43,22 +50,39 @@ Route::group([
     'middleware' => 'auth.role:admin,dealer,subdealer',
     'prefix' => 'product'
 ], function() {
-    Route::get('/product-list', 'ProductController@getProductList');
+    Route::post('/product-list', 'ProductController@getProductList');
     Route::post('/add-product', 'ProductController@addProduct');
 
-    Route::get('/category-list', 'ProductCategoryController@getProductCategories');
+    Route::post('/category-list', 'ProductCategoryController@getProductCategories');
     Route::post('/add-category', 'ProductCategoryController@addProductCategory');
 });
 
 
 // Route::resource('/inventory', 'InventoryController');
 
+Route::group([
+    'middleware' => 'auth.role:admin',
+    'prefix' => 'inventory'
+], function ($router) {
+    Route::post('/create-inventory', 'InventoryController@createInventory');
+});
+
 
 Route::group([
     'middleware' => 'auth.role:admin,dealer,subdealer',
     'prefix' => 'inventory'
 ], function ($router) {
-    Route::get('/', 'InventoryController@getInventory');
-    Route::get('/user-inventory', 'InventoryController@getUserInventory');
+    Route::post('/', 'InventoryController@getInventory');
+    Route::post('/user-inventory', 'InventoryController@getUserInventory');
     Route::post('/transfer-stock', 'InventoryController@transferStock');
 });
+
+
+Route::group([
+    'middleware' => 'auth.role:admin,dealer,subdealer',
+    // 'prefix' => ''
+], function ($router) {
+    Route::post('transaction', 'TransactionController@getTransactionList');
+});
+
+

@@ -12,10 +12,18 @@ use Illuminate\Support\Facades\Validator;
 
 class ProductCategoryController extends Controller
 {
-    public function getProductCategories()
+    public function getProductCategories(Request $request)
     {
+        $paginate = $request->paginate;
+        $currentPage = $request->page;
+        $perPage = $request->per_page;
 
-        return ProductCategory::all();
+
+        return ResponseModel::success([
+            'inventory' => $paginate
+                ? ProductCategory::paginate($perPage, ['*'], 'page', $currentPage)
+                : ProductCategory::all()
+        ]);
 
         // $id = 2;
 

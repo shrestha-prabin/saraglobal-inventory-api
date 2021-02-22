@@ -16,10 +16,11 @@ class CreateTransactionsTable extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             
+            $table->string('transaction_id')->unique();
             $table->foreignId('seller_user_id')->references('id')->on('users');
             $table->foreignId('buyer_user_id')->references('id')->on('users');
             $table->foreignId('product_id')->references('id')->on('products');
-            $table->unsignedInteger('count');
+            $table->unsignedInteger('stock');
             $table->decimal('amount', 8, 2);
             $table->string('remarks', 1000);
             $table->timestamps();

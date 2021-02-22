@@ -2,83 +2,33 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ResponseModel;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    public function getTransactionList(Request $request)
     {
-        //
-    }
+        $paginate = $request->paginate;
+        $currentPage = $request->page;
+        $perPage = $request->per_page;
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
+        $user = Auth::user();
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $query = Transaction::with([
+            'seller:id,name',
+            'buyer:id,name',
+            'product:id,name,category_id,subcategory_id'
+        ])
+            ->where('seller_user_id', $user->id)
+            ->orWhere('buyer_user_id', $user->id);
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+        return ResponseModel::success([
+            'transaction' =>  $paginate
+                ? $query->paginate($perPage, ['*'], 'page', $currentPage)
+                : $query->get()
+        ]);
     }
 }
