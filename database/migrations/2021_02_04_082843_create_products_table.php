@@ -20,8 +20,6 @@ class CreateProductsTable extends Migration
             $table->string('brand')->nullable();
             $table->integer('category_id')->references('id')->on('product_categories');
             $table->integer('subcategory_id')->nullable()->references('id')->on('product_categories');
-            $table->date('manufacture_date')->nullable();
-            $table->date('expiry_date')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

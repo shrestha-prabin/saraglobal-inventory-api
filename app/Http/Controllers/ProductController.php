@@ -4,17 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ResponseModel;
+use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     * 
-     * @return \Illuminate\Http\Response
-     */
     public function getProductList(Request $request)
     {
         $paginate = $request->paginate;
@@ -26,19 +22,13 @@ class ProductController extends Controller
             'subcategory:id,name'
         ]);
 
-        return ResponseModel::success([
-            'inventory' => $paginate
+        return ResponseModel::success(
+            $paginate
                 ? $query->paginate($perPage, ['*'], 'page', $currentPage)
                 : $query->get()
-        ]);
+        );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function addProduct(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -46,9 +36,7 @@ class ProductController extends Controller
             'description' => 'max:1000',
             'brand' => 'max:100',
             'category_id' => 'required',
-            'subcategory_id' => '',
-            'manufacture_date' => 'nullable|date',
-            'expiry_date' => 'nullable|date'
+            'subcategory_id' => ''
         ]);
 
         if ($validator->fails()) {
@@ -64,4 +52,63 @@ class ProductController extends Controller
         ]);
     }
 
+    public function getProductDetails(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseModel::failed(
+                $validator->errors()
+            );
+        }
+
+        $query = Product::with(
+            'category:id,name',
+            'subcategory:id,name',
+        )->find($request->product_id);
+
+        if (!$query) {
+            return ResponseModel::failed([
+                'message' => 'Product not found'
+            ]);
+        }
+
+        return ResponseModel::success(
+            $query
+        );
+    }
+
+
+    public function getProductTransactionHistory(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'serial_no' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseModel::failed($validator->errors());
+        }
+
+        $serial_no = $request->serial_no;
+
+        $query = TransactionItem::with([
+            'inventoryItem:id,serial_no,product_id,user_id',
+            'transaction:id,transaction_id,seller_user_id,buyer_user_id',
+            'transaction.buyer' => function ($q) {
+                $q->select('id', 'name', 'email');
+            },
+            'transaction.seller' => function ($q) {
+                $q->select('id', 'name', 'email');
+            },
+        ])
+            ->whereHas('inventoryItem', function ($query) use ($serial_no) {
+                $query->where('serial_no', $serial_no);
+            })->get();
+
+        return ResponseModel::success([
+            $query
+        ]);
+    }
 }

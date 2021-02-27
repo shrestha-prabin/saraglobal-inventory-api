@@ -61,12 +61,12 @@ class DatabaseSeeder extends Seeder
 
     public function createInventory()
     {
-        Inventory::create(['product_id' => 1, 'stock_holder_user_id' => 1, 'stock' => 40, 'stock_defective' => 4]);
-        Inventory::create(['product_id' => 2, 'stock_holder_user_id' => 1, 'stock' => 80]);
-        Inventory::create(['product_id' => 3, 'stock_holder_user_id' => 1, 'stock' => 10]);
-        Inventory::create(['product_id' => 4, 'stock_holder_user_id' => 1, 'stock' => 20]);
-        Inventory::create(['product_id' => 2, 'stock_holder_user_id' => 2, 'stock' => 1]);
-        Inventory::create(['product_id' => 2, 'stock_holder_user_id' => 3, 'stock' => 1]);
-        Inventory::create(['product_id' => 1, 'stock_holder_user_id' => 4, 'stock' => 1]);
+        Inventory::create(['serial_no' => 'A00001', 'product_id' => 1, 'user_id' => 1]);
+        Inventory::create(['serial_no' => 'A00002', 'product_id' => 2, 'user_id' => 1]);
+        Inventory::create(['serial_no' => 'A00003', 'product_id' => 3, 'user_id' => 1]);
+        Inventory::create(['serial_no' => 'A00004', 'product_id' => 4, 'user_id' => 1]);
+        Inventory::create(['serial_no' => 'A00005', 'product_id' => 2, 'user_id' => 2]);
+        Inventory::create(['serial_no' => 'A00006', 'product_id' => 2, 'user_id' => 3]);
+        Inventory::create(['serial_no' => 'A00007', 'product_id' => 1, 'user_id' => 4]);
     }
 }

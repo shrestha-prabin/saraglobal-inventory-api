@@ -35,6 +35,7 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
+        'role'
     ];
 
     /**
@@ -76,6 +77,6 @@ class User extends Authenticatable implements JWTSubject
 
     public function inventories()
     {
-        return $this->hasMany(Inventory::class, 'stock_holder_user_id');
+        return $this->hasMany(Inventory::class, 'user_id');
     }
 }

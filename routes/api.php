@@ -14,24 +14,20 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+/**
+ * Auth
+ */
 Route::group([
     'middleware' => 'api',
     'prefix' => 'auth'
-], function ($router) {
+], function () {
     Route::post('/login', 'AuthController@login');
 });
 
 Route::group([
     'middleware' => 'auth.role:admin,dealer,subdealer',
-    'prefix' => 'user'
-], function ($router) {
-    Route::post('/user-list', 'UserController@getUsers');
-});
-
-Route::group([
-    'middleware' => 'auth.role:admin,dealer,subdealer',
     'prefix' => 'auth'
-], function ($router) {
+], function () {
     Route::post('/refresh', 'AuthController@refresh');
     Route::post('/user-profile', 'AuthController@userProfile');
     Route::post('/logout', 'AuthController@logout');
@@ -40,49 +36,90 @@ Route::group([
 Route::group([
     'middleware' => 'auth.role:admin',
     'prefix' => 'auth'
-], function ($router) {
+], function () {
     Route::post('/register', 'AuthController@register');
     Route::post('/delete', 'AuthController@delete');
     Route::post('/restore', 'AuthController@restore');
 });
 
-Route::group([
-    'middleware' => 'auth.role:admin,dealer,subdealer',
-    'prefix' => 'product'
-], function() {
-    Route::post('/product-list', 'ProductController@getProductList');
-    Route::post('/add-product', 'ProductController@addProduct');
-
-    Route::post('/category-list', 'ProductCategoryController@getProductCategories');
-    Route::post('/add-category', 'ProductCategoryController@addProductCategory');
-});
-
-
-// Route::resource('/inventory', 'InventoryController');
+/**
+ * User
+ */
 
 Route::group([
     'middleware' => 'auth.role:admin',
+    'prefix' => 'user'
+], function () {
+    Route::post('/user-list', 'UserController@getUserList');
+});
+
+
+Route::group([
+    'middleware' => 'auth.role:admin,dealer,subdealer',
+    'prefix' => 'user'
+], function () {
+    Route::post('/client-list', 'UserController@getClientList');
+});
+
+/**
+ * Product
+ */
+Route::group([
+    'middleware' => 'auth.role:admin,dealer,subdealer',
+    'prefix' => 'product'
+], function () {
+    Route::post('/product-list', 'ProductController@getProductList');
+    Route::post('/add-product', 'ProductController@addProduct');
+    Route::post('/product-details', 'ProductController@getProductDetails');
+
+
+    Route::post('/category-list', 'ProductCategoryController@getProductCategories');
+    Route::post('/add-category', 'ProductCategoryController@addProductCategory');
+    Route::post('/category-details', 'ProductCategoryController@getCategoryDetails');
+});
+
+
+Route::group([
+    'middleware' => 'auth.role:admin,dealer,subdealer',
+    'prefix' => 'product'
+], function () {
+    Route::post('/transaction-history', 'ProductController@getProductTransactionHistory');
+});
+
+
+/**
+ * Inventory
+ */
+Route::group([
+    'middleware' => 'auth.role:admin',
     'prefix' => 'inventory'
-], function ($router) {
-    Route::post('/create-inventory', 'InventoryController@createInventory');
+], function () {
+    Route::post('/add-inventory', 'InventoryController@addInventory');
+    Route::post('/all-inventory', 'InventoryController@getInventory');
 });
 
 
 Route::group([
     'middleware' => 'auth.role:admin,dealer,subdealer',
     'prefix' => 'inventory'
-], function ($router) {
-    Route::post('/', 'InventoryController@getInventory');
+], function () {
     Route::post('/user-inventory', 'InventoryController@getUserInventory');
-    Route::post('/transfer-stock', 'InventoryController@transferStock');
+    Route::post('/transfer-inventory', 'InventoryController@transferInventory');
+    Route::post('/item-details', 'InventoryController@getInventoryItemDetails');
+
+    Route::post('/product-stock', 'InventoryController@getProductStock');
+    Route::post('/category-stock', 'InventoryController@getCategoryStock');
 });
 
 
+/**
+ * Transaction
+ */
 Route::group([
     'middleware' => 'auth.role:admin,dealer,subdealer',
-    // 'prefix' => ''
-], function ($router) {
-    Route::post('transaction', 'TransactionController@getTransactionList');
+    'prefix' => 'transaction'
+], function () {
+    Route::post('/transaction-list', 'TransactionController@getTransactionList');
+    Route::post('/transaction-details', 'TransactionController@getTransactionDetails');
 });
-
 

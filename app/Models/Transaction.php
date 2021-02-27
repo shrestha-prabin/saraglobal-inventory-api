@@ -13,8 +13,7 @@ class Transaction extends Model
         'transaction_id',
         'seller_user_id',
         'buyer_user_id',
-        'product_id',
-        'stock',
+        'items_count',
         'amount',
         'remarks'
     ];
@@ -33,5 +32,10 @@ class Transaction extends Model
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id')->withTrashed();
-    } 
+    }
+
+    public function items()
+    {
+        return $this->hasMany(TransactionItem::class, 'transaction_id');
+    }
 }

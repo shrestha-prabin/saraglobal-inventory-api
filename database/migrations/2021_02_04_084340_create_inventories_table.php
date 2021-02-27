@@ -15,10 +15,12 @@ class CreateInventoriesTable extends Migration
     {
         Schema::create('inventories', function (Blueprint $table) {
             $table->id();
+            $table->string('serial_no', 16)->unique();
             $table->foreignId('product_id')->references('id')->on('products');
-            $table->foreignId('stock_holder_user_id')->references('id')->on('users');
-            $table->integer('stock')->default(0);
-            $table->integer('stock_defective')->default(0);
+            $table->foreignId('user_id')->references('id')->on('users');
+            $table->boolean('is_defective')->default(0);
+            $table->date('manufacture_date')->nullable();
+            $table->date('expiry_date')->nullable();
             $table->timestamps();
         });
     }

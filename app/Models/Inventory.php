@@ -11,10 +11,12 @@ class Inventory extends Model
     use HasFactory;
 
     protected $fillable = [
+        'serial_no',
         'product_id',
-        'stock_holder_user_id',
-        'stock',
-        'stock_defective',
+        'user_id',
+        'is_defective',
+        'manufacture_date',
+        'expiry_date'
     ];
 
     public function product()
@@ -22,8 +24,8 @@ class Inventory extends Model
         return $this->belongsTo(Product::class, 'product_id')->withTrashed();
     }
 
-    public function stockHolder()
+    public function user()
     {
-        return $this->belongsTo(User::class, 'stock_holder_user_id')->withTrashed();
+        return $this->belongsTo(User::class, 'user_id')->withTrashed();
     }
 }

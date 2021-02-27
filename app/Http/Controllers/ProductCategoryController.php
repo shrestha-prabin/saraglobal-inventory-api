@@ -18,12 +18,15 @@ class ProductCategoryController extends Controller
         $currentPage = $request->page;
         $perPage = $request->per_page;
 
+        $query = ProductCategory::with([
+            'subcategories'
+        ])->where('parent_category_id', null);
 
-        return ResponseModel::success([
-            'inventory' => $paginate
-                ? ProductCategory::paginate($perPage, ['*'], 'page', $currentPage)
-                : ProductCategory::all()
-        ]);
+        return ResponseModel::success(
+            $paginate
+                ? $query->paginate($perPage, ['*'], 'page', $currentPage)
+                : $query->get()
+        );
 
         // $id = 2;
 
@@ -65,59 +68,31 @@ class ProductCategoryController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function getCategoryDetails(Request $request)
     {
-        //
-    }
+        $validator = Validator::make($request->all(), [
+            'category_id' => 'required'
+        ]);
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
+        if ($validator->fails()) {
+            return ResponseModel::failed(
+                $validator->errors()
+            );
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
+        $query = ProductCategory::with(
+            'parentCategory:id,name',
+            'subcategories:id,name,parent_category_id',
+        )->find($request->category_id);
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
+        if (!$query) {
+            return ResponseModel::failed([
+                'message' => 'Product category not found'
+            ]);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+        return ResponseModel::success(
+            $query
+        );
     }
 }

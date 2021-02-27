@@ -19,7 +19,7 @@ class ResponseModel extends Model
             'success' => $succes,
             'error' => $error,
             'data' => $data
-        ]);
+        ], $code);
     }
 
     public static function success($data)

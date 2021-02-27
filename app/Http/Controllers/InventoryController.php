@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\ResponseModel;
 use App\Models\Transaction;
+use App\Models\TransactionItem;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -16,11 +18,17 @@ use Illuminate\Support\Facades\Validator;
 
 class InventoryController extends Controller
 {
-    public function createInventory(Request $request)
+    /**
+     * Add an unuqie product item
+     */
+    public function addInventory(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'serial_no' => 'required|unique:inventories',
             'product_id' => 'required',
-            'stock' => 'required|numeric|min:1|not_in:0'
+            'is_defective' => 'boolean',
+            'manufacture_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date'
         ]);
 
         if ($validator->fails()) {
@@ -29,34 +37,21 @@ class InventoryController extends Controller
 
         $user = Auth::user();
 
-        $product_id = $request->product_id;
-        $stock = $request->stock;
-
-        // Check if inventory for given product already exists
-        $inventory = Inventory::where('product_id', $product_id)
-            ->where('stock_holder_user_id', $user->id)
-            ->first();
-
-        // If inventory already exists, add new stock to existing inventory
-        if ($inventory) {
-            $inventory->stock += $stock;
-            $inventory->save();
-        } else {
-            // Create new stock
-            Inventory::create([
-                'product_id' => $product_id,
-                'stock_holder_user_id' => $user->id,
-                'stock' => $stock
-            ]);
-        }
+        $user = Inventory::create(array_merge(
+            $validator->validated(),
+            [
+                'user_id' => $user->id
+            ]
+        ));
 
         return ResponseModel::success([
-            'message' => 'New stocks added'
+            'message' => 'New product added'
         ]);
     }
 
     /**
-     * Display a listing of the resource.
+     * Accessible to role `admin`
+     * Get inventory data of all users
      *
      * @return \Illuminate\Http\Response
      */
@@ -67,16 +62,20 @@ class InventoryController extends Controller
         $perPage = $request->per_page;
 
         $query = Inventory::with([
-            'product', 'stockHolder'
+            'product:id,name',
+            'user:id,name'
         ]);
 
-        return ResponseModel::success([
-            'inventory' => $paginate
+        return ResponseModel::success(
+            $paginate
                 ? $query->paginate($perPage, ['*'], 'page', $currentPage)
                 : $query->get()
-        ]);
+        );
     }
 
+    /**
+     * Get inventory data of single user
+     */
     public function getUserInventory(Request $request)
     {
         $paginate = $request->paginate;
@@ -86,17 +85,62 @@ class InventoryController extends Controller
         $user = Auth::user();
 
         $query = Inventory::with([
-            'product'
-        ])->where('stock_holder_user_id', $user->id);
+            'product:id,name,category_id,subcategory_id',
+            'product.category' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'product.subcategory' => function ($q) {
+                $q->select('id', 'name');
+            }
+        ])->where('user_id', $user->id);
 
-        return ResponseModel::success([
-            'inventory' => $paginate
+        return ResponseModel::success(
+            $paginate
                 ? $query->paginate($perPage, ['*'], 'page', $currentPage)
                 : $query->get()
-        ]);
+        );
     }
 
-    public function transferStock(Request $request)
+    /**
+     * Invengory Item details
+     */
+
+    public function getInventoryItemDetails(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'serial_no' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseModel::failed($validator->errors());
+        }
+
+        $query = Inventory::with([
+            'product:id,name,category_id,subcategory_id',
+            'product.category' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'product.subcategory' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'user:id,name,email',
+        ])->where('serial_no', $request->serial_no)->first();
+
+        if (!$query) {
+            return ResponseModel::failed([
+                'message' => 'Product inventory not found'
+            ]);
+        }
+
+        return ResponseModel::success(
+            $query
+        );
+    }
+
+    /**
+     * Transfer Inventory
+     */
+    public function transferInventory(Request $request)
     {
         DB::beginTransaction();
 
@@ -105,7 +149,7 @@ class InventoryController extends Controller
         $validator = Validator::make($request->all(), [
             'buyer_user_id' => 'required',
             'product_id' => 'required',
-            'stock' => 'required|numeric|min:1|not_in:0',
+            'inventory_items' => 'required|array|min:1|not_in:0',
             'amount' => 'numeric|min:0|not_in:0',
             'remarks' => 'required|max:1000',
         ]);
@@ -116,87 +160,114 @@ class InventoryController extends Controller
 
         $seller_user_id = $seller->id;
         $buyer_user_id = $request->buyer_user_id;
-        $stock = $request->stock;
+        $inventory_item_ids = $request->inventory_items;
         $amount = $request->amount;
         $remarks = $request->remarks;
 
-        $buyer = User::find($buyer_user_id);
-
-        $product_id = $request->product_id;
-        $product = Product::find($product_id);
-
-        if (!$buyer) {
+        // Check if buyer exists for given id
+        if (!User::find($buyer_user_id)) {
             return ResponseModel::failed([
                 'message' => 'Buyer not found'
             ]);
         }
 
+        // Check if buyer and seller is same
         if ($seller_user_id == $buyer_user_id) {
             return ResponseModel::failed([
-                'message' => 'Cannot transfer stock to self'
+                'message' => 'Cannot transfer items to self'
             ]);
         }
 
-        $sellerInventory = Inventory::where('product_id', $product_id)
-            ->where('stock_holder_user_id', $seller_user_id)
-            ->first();
+        foreach ($inventory_item_ids as $inventory_item_id) {
+            $inventory_item = Inventory::find($inventory_item_id);
 
-        $buyerInventory = Inventory::where('product_id', $product_id)
-            ->where('stock_holder_user_id', $buyer_user_id)
-            ->first();
+            // Check if user holds the inventory item
+            if ($inventory_item->user_id != $seller->id) {
+                return ResponseModel::failed([
+                    'message' => 'Item not found. Serial Number: ' . $inventory_item->serial_no
+                ]);
+            }
 
-        if (!$sellerInventory) {
-            return ResponseModel::failed([
-                'message' => 'Seller inventory not found'
-            ]);
+            // Transfer inventory item to new user
+            // Change `user_id` each inventory item to buyer's id
+            $inventory_item->user_id = $buyer_user_id;
+            $inventory_item->save();
         }
 
-        if (!$buyerInventory) {
-            // Buyer inventory not found
-            // Create new one
-            $buyerInventory = new Inventory([
-                'product_id' => $product_id,
-                'stock_holder_user_id' => $buyer_user_id,
-                'stock' => 0
-            ]);
-        }
-
-        if ($sellerInventory->stock < $stock) {
-            return ResponseModel::failed([
-                'message' => 'Insufficient stock. Available Stock - ' . $sellerInventory->stock
-            ]);
-        }
-
-        // perform transaction
-        $sellerInventory->stock -= $stock;
-        $buyerInventory->stock += $stock;
-
-        $buyerInventory->save();
-        $sellerInventory->save();
-
+        // Transaction Id format yy mm sequence
 
         $lastTransaction = Transaction::orderBy('created_at', 'DESC')->first();
+
         if ($lastTransaction) {
             $lastTransactionId = (int)$lastTransaction->transaction_id;
         } else {
             $lastTransactionId = 0;
         }
 
-        // save transaction
-        Transaction::create([
-            'transaction_id' => str_pad($lastTransactionId + 1, 10, '0', STR_PAD_LEFT),
+        $transactionId = str_pad($lastTransactionId + 1, 10, '0', STR_PAD_LEFT);
+
+        // Remove year & month
+        $transactionId = substr($transactionId, 4, strlen((string)$transactionId));
+
+        // Add year & month
+        $transactionId = date('ym') . $transactionId;
+
+        // Save transaction
+        $newTransaction = Transaction::create([
+            'transaction_id' => $transactionId,
             'seller_user_id' => $seller_user_id,
             'buyer_user_id' => $buyer_user_id,
-            'product_id' => $product_id,
-            'stock' => $stock,
+            'items_count' => sizeof($inventory_item_ids),
             'amount' => $amount,
             'remarks' => $remarks,
         ]);
 
+        // Save each item separately
+        foreach ($inventory_item_ids as $inventory_item_id) {
+
+            TransactionItem::create([
+                'inventory_item_id' => $inventory_item_id,
+                'transaction_id' => $newTransaction->id
+            ]);
+        }
+
         DB::commit();
 
         return ResponseModel::success([
-            'message' => $stock . ' Transfer Successful from ' . $seller->name . ' to ' . $buyer->name
+            'message' => sizeof($inventory_item_ids) . ' items transferred successfully'
         ]);
+    }
+
+    public function getProductStock(Request $request)
+    {
+        return Inventory::with('product')
+            ->where('user_id', Auth::user()->id)
+            ->selectRaw('product_id, COUNT(*) as count')
+            ->groupBy('product_id')
+            ->get();
+    }
+
+    public function getCategoryStock(Request $request)
+    {
+        $category_list = ProductCategory::where('parent_category_id', null)->get();
+        $data = [];
+        foreach ($category_list as $category_item) {
+            $item = [
+                'category_id' => $category_item->id,
+                
+                'count' => Inventory::with([
+                    'product'
+                ])
+                    ->where('user_id', Auth::user()->id)
+                    ->whereHas('product', function ($q) use ($category_item) {
+                        $q->where('category_id', $category_item->id);
+                    })->count(),
+
+                'category' => ProductCategory::find($category_item->id)
+            ];
+            array_push($data, $item);
+        }
+
+        return $data;
     }
 }
