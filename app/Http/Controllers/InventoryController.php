@@ -62,8 +62,14 @@ class InventoryController extends Controller
         $perPage = $request->per_page;
 
         $query = Inventory::with([
-            'product:id,name',
-            'user:id,name'
+            'user:id,name',
+            'product:id,name,category_id,subcategory_id',
+            'product.category' => function ($q) {
+                $q->select('id', 'name');
+            },
+            'product.subcategory' => function ($q) {
+                $q->select('id', 'name');
+            }
         ]);
 
         return ResponseModel::success(
@@ -148,7 +154,6 @@ class InventoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'buyer_user_id' => 'required',
-            'product_id' => 'required',
             'inventory_items' => 'required|array|min:1|not_in:0',
             'amount' => 'numeric|min:0|not_in:0',
             'remarks' => 'required|max:1000',
