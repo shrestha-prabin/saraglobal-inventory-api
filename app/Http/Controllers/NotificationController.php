@@ -27,7 +27,7 @@ class NotificationController extends Controller
                 $q->select('id', 'name');
             },
         ])->whereNotNull('expiry_date')
-            ->orderBy('expiry_date', 'DESC');
+            ->orderBy('expiry_date', 'ASC');
 
         return $query->get()->map(function ($item) {
                 $expiry_date = strtotime($item['expiry_date']);
