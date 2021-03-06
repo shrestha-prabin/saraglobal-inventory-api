@@ -28,6 +28,7 @@ Route::group([
     'middleware' => 'auth.role:admin,dealer,subdealer',
     'prefix' => 'auth'
 ], function () {
+    Route::post('/register', 'AuthController@register');
     Route::post('/refresh', 'AuthController@refresh');
     Route::post('/user-profile', 'AuthController@userProfile');
     Route::post('/logout', 'AuthController@logout');
@@ -37,7 +38,6 @@ Route::group([
     'middleware' => 'auth.role:admin',
     'prefix' => 'auth'
 ], function () {
-    Route::post('/register', 'AuthController@register');
     Route::post('/delete', 'AuthController@delete');
     Route::post('/restore', 'AuthController@restore');
 });
@@ -121,5 +121,12 @@ Route::group([
 ], function () {
     Route::post('/transaction-list', 'TransactionController@getTransactionList');
     Route::post('/transaction-details', 'TransactionController@getTransactionDetails');
+});
+
+Route::group([
+    'middleware' => 'auth.role:admin',
+    'prefix' => 'notification'
+], function () {
+    Route::post('/all', 'NotificationController@getNotifications');
 });
 
