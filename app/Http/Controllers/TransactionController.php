@@ -28,7 +28,8 @@ class TransactionController extends Controller
             },
         ])
             ->where('seller_user_id', $user->id)
-            ->orWhere('buyer_user_id', $user->id);
+            ->orWhere('buyer_user_id', $user->id)
+            ->orderBy('created_at', 'DESC');
 
         return ResponseModel::success(
             $paginate
