@@ -25,17 +25,17 @@ class DatabaseSeeder extends Seeder
 
         $this->createUsers();
         $this->createCategories();
-        $this->createProducts();
-        $this->createInventory();
+        // $this->createProducts();
+        // $this->createInventory();
     }
 
     public function createUsers()
     {
         // User::truncate();
-        User::create(['id' => '1', 'name' => 'admin', 'email' => 'admin@email.com', 'password' => bcrypt(111111), 'role' => 'admin']);
-        User::create(['id' => '2', 'name' => 'dealer', 'email' => 'dealer@email.com', 'password' => bcrypt(111111),'parent_user_id' => '1', 'role' => 'dealer']);
-        User::create(['id' => '3', 'name' => 'subdealer', 'email' => 'subdealer@email.com', 'password' => bcrypt(111111),'parent_user_id' => '2', 'role' => 'subdealer']);
-        User::create(['id' => '4', 'name' => 'customer', 'email' => 'customer@email.com', 'parent_user_id' => '3', 'password' => bcrypt(111111), 'role' => 'customer']);
+        User::create(['id' => '1', 'name' => 'admin', 'email' => 'admin@saraglobals.com', 'password' => bcrypt('SaraGlobals&*()'), 'role' => 'admin']);
+        // User::create(['id' => '2', 'name' => 'dealer', 'email' => 'dealer@email.com', 'password' => bcrypt(111111),'parent_user_id' => '1', 'role' => 'dealer']);
+        // User::create(['id' => '3', 'name' => 'subdealer', 'email' => 'subdealer@email.com', 'password' => bcrypt(111111),'parent_user_id' => '2', 'role' => 'subdealer']);
+        // User::create(['id' => '4', 'name' => 'customer', 'email' => 'customer@email.com', 'parent_user_id' => '3', 'password' => bcrypt(111111), 'role' => 'customer']);
     }
 
     public function createCategories()

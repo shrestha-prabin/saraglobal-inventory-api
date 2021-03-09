@@ -130,3 +130,5 @@ Route::group([
     Route::post('/all', 'NotificationController@getNotifications');
 });
 
+
+Route::get('mail/send', 'MailController@send');

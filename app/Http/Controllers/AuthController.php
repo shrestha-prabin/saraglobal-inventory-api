@@ -8,7 +8,10 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
+use Stringable;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -47,7 +50,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|between:2,100',
             'email' => 'required|string|email|max:100|unique:users',
-            'password' => 'required|string|confirmed|min:6',
+            // 'password' => 'required|string|confirmed|min:6',
             'role' => 'required'
         ]);
 
@@ -55,10 +58,27 @@ class AuthController extends Controller
             return ResponseModel::failed($validator->errors());
         }
 
+        DB::beginTransaction();
+        $password = Str::random(8);
+
         $user = User::create(array_merge(
             $validator->validated(),
-            ['password' => bcrypt($request->password)]
+            [
+                'password' => bcrypt($password)
+            ]
         ));
+
+        if (strtolower($request->role) != 'customer') {
+            MailController::send(
+                Auth::user()->name,
+                $request->name,
+                $request->email,
+                $request->role,
+                $password
+            );
+        }
+
+        DB::commit();
 
         return ResponseModel::success([
             'message' => 'User successfully registered',
