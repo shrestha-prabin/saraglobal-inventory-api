@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Response;
 use Stringable;
 use Illuminate\Support\Str;
@@ -177,6 +178,79 @@ class AuthController extends Controller
             'token_type' => 'bearer',
             'expires_in' => Auth::factory()->getTTL() * 60,
             'user' => Auth::user()
+        ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|exists:users',
+            'old_password' => 'required|string',
+            'password' => 'required|string|confirmed|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseModel::failed($validator->errors());
+        }
+        
+        // compare old password and current password
+        if (!Hash::check(
+            $request->old_password,
+            User::where('email', $request->email)->first('password')->password
+        )) {
+            return ResponseModel::failed([
+                'message' => 'Invalid email or password'
+            ]);
+        }
+
+        // update password
+        $user = User::where('email', $request->email)->first();
+        $user['password'] = bcrypt($request->password);
+        $user->save();
+
+        // clear token
+        Auth::logout();
+
+        return ResponseModel::success([
+            'message' => 'Password updated successfully'
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|exists:users'
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseModel::failed($validator->errors());
+        }
+
+        DB::beginTransaction();
+
+        $email = $request->email;
+        $user = User::where('email', $email)->first();
+
+        $newPassword = Str::random(8);
+
+        if (User::where('email', $email)->first()->role != 'customer') {
+            MailController::sendPasswordResetMail(
+                $email,
+                $newPassword
+            );
+        } else {
+            return ResponseModel::failed([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $user->password = bcrypt($newPassword);
+        $user->save();
+
+        DB::commit();
+
+        return ResponseModel::success([
+            'message' => 'New Password has been sent to ' . $email
         ]);
     }
 }

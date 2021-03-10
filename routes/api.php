@@ -22,6 +22,7 @@ Route::group([
     'prefix' => 'auth'
 ], function () {
     Route::post('/login', 'AuthController@login');
+    Route::post('/reset-password', 'AuthController@resetPassword');
 });
 
 Route::group([
@@ -32,6 +33,7 @@ Route::group([
     Route::post('/refresh', 'AuthController@refresh');
     Route::post('/user-profile', 'AuthController@userProfile');
     Route::post('/logout', 'AuthController@logout');
+    Route::post('/change-password', 'AuthController@changePassword');
 });
 
 Route::group([
@@ -129,6 +131,3 @@ Route::group([
 ], function () {
     Route::post('/all', 'NotificationController@getNotifications');
 });
-
-
-Route::get('mail/send', 'MailController@send');

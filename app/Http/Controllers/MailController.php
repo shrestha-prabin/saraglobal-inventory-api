@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PasswordResetEmail;
 use App\Mail\UserRegistrationEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -27,5 +28,14 @@ class MailController extends Controller
         $newMail->password = $password;
  
         Mail::to($receiverEmail)->send(new UserRegistrationEmail($newMail));
+    }
+
+    public static function sendPasswordResetMail($email, $newPassword)
+    {
+        $newMail = new \stdClass();
+        $newMail->email = $email;
+        $newMail->password = $newPassword;
+ 
+        Mail::to($email)->send(new PasswordResetEmail($newMail));
     }
 }
