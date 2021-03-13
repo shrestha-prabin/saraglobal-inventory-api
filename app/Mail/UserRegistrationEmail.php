@@ -35,7 +35,7 @@ class UserRegistrationEmail extends Mailable
             ->subject('User Registration')
             ->with(
                 [
-                    'url' => 'http://saraglobals.com/'
+                    'url' => 'https://saraglobals.com/'
                 ]
             );
 

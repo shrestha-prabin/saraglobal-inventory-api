@@ -35,7 +35,7 @@ class PasswordResetEmail extends Mailable
             ->subject('Password Reset')
             ->with(
                 [
-                    'url' => 'http://saraglobals.com/'
+                    'url' => 'https://saraglobals.com/'
                 ]
             );
 
