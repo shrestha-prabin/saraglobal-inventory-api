@@ -67,16 +67,22 @@ Route::group([
  * Product
  */
 Route::group([
+    'middleware' => 'auth.role:admin',
+    'prefix' => 'product'
+], function () {
+    Route::post('/add-product', 'ProductController@addProduct');
+    Route::post('/add-category', 'ProductCategoryController@addProductCategory');
+});
+
+Route::group([
     'middleware' => 'auth.role:admin,dealer,subdealer',
     'prefix' => 'product'
 ], function () {
     Route::post('/product-list', 'ProductController@getProductList');
-    Route::post('/add-product', 'ProductController@addProduct');
     Route::post('/product-details', 'ProductController@getProductDetails');
 
 
     Route::post('/category-list', 'ProductCategoryController@getProductCategories');
-    Route::post('/add-category', 'ProductCategoryController@addProductCategory');
     Route::post('/category-details', 'ProductCategoryController@getCategoryDetails');
 });
 
