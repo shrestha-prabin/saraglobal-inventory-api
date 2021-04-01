@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Carbon;
+
+use function PHPSTORM_META\map;
 
 class InventoryController extends Controller
 {
@@ -24,7 +27,9 @@ class InventoryController extends Controller
     public function addInventory(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'serial_no' => 'required|unique:inventories',
+            'serial_num_prefix' => 'required',
+            'serial_num_start' => 'required|int',
+            'serial_num_end' => 'required|int',
             'product_id' => 'required',
             'is_defective' => 'boolean',
             'manufacture_date' => 'nullable|date',
@@ -37,15 +42,62 @@ class InventoryController extends Controller
 
         $user = Auth::user();
 
-        $user = Inventory::create(array_merge(
-            $validator->validated(),
-            [
-                'user_id' => $user->id
-            ]
-        ));
+        $serial_num_prefix = $request->serial_num_prefix;
+        $serial_num_start = (int)$request->serial_num_start;
+        $serial_num_end = (int)$request->serial_num_end;
+
+        if ($serial_num_start > $serial_num_end) {
+            return ResponseModel::failed([
+                'message' => 'Invalid Range'
+            ]);
+        }
+
+        $serial_numbers = [];
+        $arrData = [];
+        for ($i = $serial_num_start; $i <= $serial_num_end; $i++) {
+            $serial_number = $serial_num_prefix . $i;
+
+            if (Inventory::where('serial_no', $serial_number)->count() > 0) {
+                return ResponseModel::success([
+                    'message' => 'Serial Number: ' . $serial_number . ' already exists'
+                ]);
+            }
+            $now = Carbon::now()->toDateTimeString();
+
+            array_push($serial_numbers, $serial_number);
+            array_push(
+                $arrData,
+                [
+
+                    'product_id' => $request->product_id,
+                    'is_defective' => $request->is_defective,
+                    'manufacture_date' => $request->manufacture_date,
+                    'expiry_date' => $request->expiry_date,
+                    'user_id' => $user->id,
+                    'serial_no' => $serial_number,
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ]
+            );
+        }
+
+        DB::beginTransaction();
+
+        Inventory::insert($arrData);
+
+        // $user = Inventory::create(array_merge(
+        //     $validator->validated(),
+        //     [
+        //         'user_id' => $user->id,
+        //         'serial_no' => $serial_number
+        //     ]
+        // ));
+
+        DB::commit();
+
 
         return ResponseModel::success([
-            'message' => 'New product added'
+            'message' => sizeof($serial_numbers) . ' New product added'
         ]);
     }
 
@@ -259,7 +311,7 @@ class InventoryController extends Controller
         foreach ($category_list as $category_item) {
             $item = [
                 'category_id' => $category_item->id,
-                
+
                 'count' => Inventory::with([
                     'product'
                 ])
